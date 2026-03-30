@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Attention Monitoring System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>AI Attention Monitoring System</h1>
+
+    <div class="main">
+
+        <!-- VIDEO -->
+        <div class="video-section">
+            <img src="{{ url_for('video') }}">
+        </div>
+
+        <!-- INFO PANEL -->
+        <div class="info-section">
+
+            <div class="card">
+                <strong>State</strong>
+                <div id="state">Loading...</div>
+            </div>
+
+            <div class="card">
+                <strong>Score</strong>
+                <div id="score">--</div>
+
+                <div class="progress">
+                    <div id="progress-bar"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <strong>Issues</strong>
+                <ul id="issues"></ul>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+setInterval(() => {
+    fetch('/data')
+    .then(res => res.json())
+    .then(data => {
+
+        let stateEl = document.getElementById('state');
+        stateEl.innerText = data.state;
+
+        if (data.state === "FOCUSED") stateEl.style.color = "#22c55e";
+        else if (data.state === "ATTENTIVE") stateEl.style.color = "#38bdf8";
+        else if (data.state === "LOW ATTENTION") stateEl.style.color = "#facc15";
+        else stateEl.style.color = "#ef4444";
+
+        document.getElementById('score').innerText = data.score + "%";
+        document.getElementById('progress-bar').style.width = data.score + "%";
+
+        let issuesList = document.getElementById('issues');
+        issuesList.innerHTML = "";
+
+        if (data.issues.length === 0) {
+            let li = document.createElement('li');
+            li.innerText = "No issues detected";
+            li.style.color = "#22c55e";
+            issuesList.appendChild(li);
+        } else {
+            data.issues.forEach(issue => {
+                let li = document.createElement('li');
+                li.innerText = issue;
+                issuesList.appendChild(li);
+            });
+        }
+    });
+}, 500);
+</script>
+
+</body>
+</html>
