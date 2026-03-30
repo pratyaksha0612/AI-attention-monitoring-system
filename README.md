@@ -4,13 +4,10 @@
 
 This project presents a real-time, web-based attention monitoring system that evaluates user engagement using computer vision. By integrating posture analysis and facial behavior tracking, the system estimates cognitive states such as focus, distraction, and drowsiness. The solution operates without any training dataset, relying on rule-based inference over pose and facial landmarks.
 
----
-
 ## Problem Statement
 
 Maintaining attention during prolonged screen interaction is a critical challenge in educational and professional environments. Existing solutions often require intrusive hardware or large datasets. This project aims to develop a lightweight, real-time system that can monitor attention using only a standard webcam.
 
----
 
 ## Objectives
 
@@ -20,13 +17,11 @@ Maintaining attention during prolonged screen interaction is a critical challeng
 * To classify user cognitive states dynamically
 * To present results through an interactive web interface
 
----
 
 ## System Architecture
 
 Webcam → Frame Capture (OpenCV) → Landmark Detection (MediaPipe Pose + Face Mesh) → Feature Extraction → Rule-Based Analysis → Flask Server → Web Dashboard
 
----
 
 ## Methodology
 
@@ -57,7 +52,6 @@ Based on the computed score, the system classifies the user into one of the foll
 * **Distracted**
 * **Critical**
 
----
 
 ## Features
 
@@ -69,7 +63,6 @@ Based on the computed score, the system classifies the user into one of the foll
 * Web-based dashboard using Flask
 * No dataset or training required
 
----
 
 ## Technologies Used
 
@@ -79,7 +72,6 @@ Based on the computed score, the system classifies the user into one of the foll
 * Flask
 * HTML, CSS, JavaScript
 
----
 
 ## Output Demonstration
 
@@ -95,13 +87,12 @@ Based on the computed score, the system classifies the user into one of the foll
 
 ![Low Attention](outputs/low_attention.png)
 
----
 
 ## Results
 
 The system successfully performs real-time attention monitoring and provides interpretable feedback through a scoring mechanism and issue identification. It demonstrates the feasibility of lightweight computer vision solutions for behavioral analysis without reliance on large datasets.
 
----
+
 
 ## Limitations
 
@@ -109,7 +100,6 @@ The system successfully performs real-time attention monitoring and provides int
 * Performance depends on lighting and camera quality
 * Does not perform true emotion classification
 
----
 
 ## Future Scope
 
@@ -118,13 +108,11 @@ The system successfully performs real-time attention monitoring and provides int
 * Deployment as a web or mobile application
 * Historical analytics and attention tracking
 
----
-
 ## Conclusion
 
 This project demonstrates an effective approach to real-time attention monitoring using computer vision. By combining posture and facial analysis, it provides a scalable and practical solution for enhancing engagement in digital environments.
 
----
+
 
 ## Author
 
