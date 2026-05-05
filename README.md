@@ -13,7 +13,7 @@ Maintaining attention during prolonged screen interaction is a critical challeng
 * To detect and analyze human posture in real time
 * To identify facial behavioral cues such as eye closure and head direction
 * To compute an attention score based on multiple parameters
-* To classify user cognitive states dynamically
+* To classify user attention states using a rule-based scoring system
 * To present results through an interactive web interface
 
 ## System Architecture
