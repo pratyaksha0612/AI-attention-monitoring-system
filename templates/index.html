@@ -38,12 +38,10 @@
                     </div>
                     <div id="state" class="state-badge">Analyzing...</div>
                 </div>
-                <!-- Video element for capturing webcam (hidden) -->
-                <video id="localVideo" autoplay playsinline muted style="display:none;"></video>
-                <!-- Canvas for extracting frames (hidden) -->
+                <!-- Native video element for capturing and displaying webcam smoothly -->
+                <video id="localVideo" class="video-feed" autoplay playsinline muted></video>
+                <!-- Canvas for extracting frames to send to server (hidden) -->
                 <canvas id="hiddenCanvas" style="display:none;"></canvas>
-                <!-- The image tag displaying the processed frames from server -->
-                <img id="video-feed" class="video-feed" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Waiting for camera feed...">
             </div>
         </div>
 
@@ -261,7 +259,6 @@ function exportData() {
 const video = document.getElementById('localVideo');
 const canvas = document.getElementById('hiddenCanvas');
 const ctx = canvas.getContext('2d');
-const resultImage = document.getElementById('video-feed');
 let latestData = null;
 
 // Start Webcam
@@ -318,7 +315,6 @@ function sendFrame() {
             setTimeout(sendFrame, 100);
             return;
         }
-        resultImage.src = data.image;
         latestData = data;
         
         // Send next frame immediately after receiving the response

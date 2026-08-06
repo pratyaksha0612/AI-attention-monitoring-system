@@ -28,12 +28,8 @@ def process():
 
         frame, score, state, issues = analyze_frame(frame)
 
-        # Encode processed frame to base64
-        _, buffer = cv2.imencode('.jpg', frame)
-        encoded_image = base64.b64encode(buffer).decode('utf-8')
-        
+        # We don't need to send the image back! Just the metrics.
         return jsonify({
-            'image': 'data:image/jpeg;base64,' + encoded_image,
             'score': score,
             'state': state,
             'issues': issues
