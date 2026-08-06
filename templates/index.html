@@ -1,85 +1,355 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>AI Attention Monitoring System</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attention Analytics Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
 
-<div class="container">
+<div class="app-container">
 
-    <h1>AI Attention Monitoring System</h1>
+    <header class="app-header">
+        <div class="logo">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                </svg>
+            </div>
+            <h1>Attention Analytics</h1>
+        </div>
+        <div class="header-actions">
+            <div class="time-display" id="clock">00:00:00</div>
+            <button class="export-btn" onclick="exportData()">Export Session Data</button>
+        </div>
+    </header>
 
-    <div class="main">
-
-        <!-- VIDEO -->
-        <div class="video-section">
-            <img src="{{ url_for('video') }}">
+    <div class="content-grid">
+        
+        <!-- LEFT COLUMN: CAMERA -->
+        <div class="camera-column">
+            <div class="camera-container">
+                <div class="video-header">
+                    <div class="live-status">
+                        <span class="live-indicator"></span> LIVE FEED
+                    </div>
+                    <div id="state" class="state-badge">Analyzing...</div>
+                </div>
+                <img src="{{ url_for('video') }}" class="video-feed" alt="Video Feed">
+            </div>
         </div>
 
-        <!-- INFO PANEL -->
-        <div class="info-section">
-
-            <div class="card">
-                <strong>State</strong>
-                <div id="state">Loading...</div>
+        <!-- RIGHT COLUMN: METRICS & LOGS -->
+        <div class="metrics-column">
+            
+            <div class="metrics-row">
+                <div class="metric-item">
+                    <span class="metric-label">Session Time</span>
+                    <span class="metric-value" id="session-time">00:00</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Average Score</span>
+                    <span class="metric-value" id="avg-score">--%</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Peak Streak</span>
+                    <span class="metric-value" id="peak-streak">0s</span>
+                </div>
             </div>
 
-            <div class="card">
-                <strong>Score</strong>
-                <div id="score">--</div>
-
-                <div class="progress">
+            <div class="score-section">
+                <span class="metric-label">Current Focus Score</span>
+                <div class="score-display">
+                    <span id="score">--</span>
+                    <span class="score-unit">%</span>
+                </div>
+                <div class="progress-track">
                     <div id="progress-bar"></div>
                 </div>
             </div>
 
-            <div class="card">
-                <strong>Issues</strong>
-                <ul id="issues"></ul>
+            <div class="logs-section">
+                <div class="log-column">
+                    <span class="section-title">Current Observations</span>
+                    <ul id="issues" class="clean-list"></ul>
+                </div>
+                <div class="log-column">
+                    <span class="section-title">Distraction Log</span>
+                    <ul id="alert-log" class="clean-list log-list"></ul>
+                </div>
             </div>
 
         </div>
 
     </div>
 
+    <!-- BOTTOM ROW: CHARTS -->
+    <div class="charts-row">
+        <div class="chart-item">
+            <span class="section-title">Score Over Time</span>
+            <div class="chart-container">
+                <canvas id="scoreChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-item">
+            <span class="section-title">State Distribution</span>
+            <div class="chart-container state-chart-container">
+                <canvas id="stateChart"></canvas>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
+// Time formatting
+function formatTime(date) {
+    return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function updateClock() {
+    document.getElementById('clock').innerText = formatTime(new Date());
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Session Time
+let sessionStart = new Date();
+function updateSessionTime() {
+    let now = new Date();
+    let diff = Math.floor((now - sessionStart) / 1000);
+    let m = Math.floor(diff / 60).toString().padStart(2, '0');
+    let s = (diff % 60).toString().padStart(2, '0');
+    document.getElementById('session-time').innerText = `${m}:${s}`;
+}
+setInterval(updateSessionTime, 1000);
+updateSessionTime();
+
+let scoreHistory = [];
+let allScores = [];
+let labels = [];
+let stateCount = {
+    "FOCUSED": 0,
+    "ATTENTIVE": 0,
+    "LOW ATTENTION": 0,
+    "DISTRACTED": 0,
+    "CRITICAL": 0
+};
+
+// Data for export
+let sessionLogs = [];
+let sessionScores = [];
+
+// Peak Streak Logic
+let currentFocusStreak = 0; // in seconds
+let peakFocusStreak = 0;
+
+// To track state changes for logging
+let previousIssues = [];
+
+// Chart.js Default Config for Matte Theme
+Chart.defaults.color = '#8b8b9c';
+Chart.defaults.borderColor = '#2a2a35';
+Chart.defaults.font.family = "'Outfit', sans-serif";
+
+const scoreChart = new Chart(document.getElementById('scoreChart'), {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Score',
+            data: scoreHistory,
+            tension: 0.4,
+            borderColor: '#9b82c3',
+            backgroundColor: 'rgba(155, 130, 195, 0.1)',
+            fill: true,
+            pointBackgroundColor: '#9b82c3',
+            pointBorderColor: '#16161a',
+            pointBorderWidth: 2,
+            pointRadius: 3
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: { min: 0, max: 100 },
+            x: { grid: { display: false } }
+        }
+    }
+});
+
+const stateChart = new Chart(document.getElementById('stateChart'), {
+    type: 'doughnut',
+    data: {
+        labels: Object.keys(stateCount),
+        datasets: [{
+            data: Object.values(stateCount),
+            backgroundColor: [
+                '#82c3a6', // FOCUSED
+                '#9b82c3', // ATTENTIVE
+                '#e8b273', // LOW ATTENTION
+                '#d87d7d', // DISTRACTED
+                '#b35959'  // CRITICAL
+            ],
+            borderWidth: 0,
+            hoverOffset: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'right',
+                labels: { color: '#e0e0e0', padding: 20, font: { size: 12 } }
+            }
+        },
+        cutout: '75%'
+    }
+});
+
+function logEvent(message, type) {
+    let now = new Date();
+    let timeStr = formatTime(now);
+    let logEntry = `[${timeStr}] ${message}`;
+    sessionLogs.push(logEntry);
+    
+    let alertLog = document.getElementById('alert-log');
+    let li = document.createElement('li');
+    li.innerText = logEntry;
+    li.classList.add(type);
+    
+    alertLog.insertBefore(li, alertLog.firstChild);
+    
+    // Keep only last 50 in UI
+    if (alertLog.children.length > 50) {
+        alertLog.removeChild(alertLog.lastChild);
+    }
+}
+
+function exportData() {
+    let dataStr = "Attention Analytics Session Data\n";
+    dataStr += `Session Start: ${sessionStart.toLocaleString()}\n`;
+    dataStr += `Session End: ${new Date().toLocaleString()}\n`;
+    dataStr += `Average Score: ${document.getElementById('avg-score').innerText}\n`;
+    dataStr += `Peak Focus Streak: ${peakFocusStreak}s\n\n`;
+    dataStr += "--- Distraction Log ---\n";
+    dataStr += sessionLogs.join('\n');
+    
+    let blob = new Blob([dataStr], { type: 'text/plain' });
+    let url = window.URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = `attention-session-${Date.now()}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
 setInterval(() => {
     fetch('/data')
     .then(res => res.json())
     .then(data => {
 
+        // --- STREAK CALCULATION ---
+        if (data.state === "FOCUSED") {
+            currentFocusStreak += 1;
+            if (currentFocusStreak > peakFocusStreak) {
+                peakFocusStreak = currentFocusStreak;
+            }
+        } else {
+            currentFocusStreak = 0;
+        }
+
+        // Format streak
+        let streakText = "";
+        if (peakFocusStreak >= 60) {
+            streakText = `${Math.floor(peakFocusStreak/60)}m ${peakFocusStreak%60}s`;
+        } else {
+            streakText = `${peakFocusStreak}s`;
+        }
+        document.getElementById('peak-streak').innerText = streakText;
+
+
+        // --- UI UPDATE ---
         let stateEl = document.getElementById('state');
         stateEl.innerText = data.state;
+        
+        // Flat state colors
+        stateEl.className = 'state-badge'; // reset
+        if (data.state === "FOCUSED") stateEl.classList.add('state-focused');
+        else if (data.state === "ATTENTIVE") stateEl.classList.add('state-attentive');
+        else if (data.state === "LOW ATTENTION") stateEl.classList.add('state-low');
+        else stateEl.classList.add('state-critical');
 
-        if (data.state === "FOCUSED") stateEl.style.color = "#22c55e";
-        else if (data.state === "ATTENTIVE") stateEl.style.color = "#38bdf8";
-        else if (data.state === "LOW ATTENTION") stateEl.style.color = "#facc15";
-        else stateEl.style.color = "#ef4444";
-
-        document.getElementById('score').innerText = data.score + "%";
+        document.getElementById('score').innerText = data.score;
         document.getElementById('progress-bar').style.width = data.score + "%";
+        
+        // Progress bar color based on score
+        let bar = document.getElementById('progress-bar');
+        if (data.score > 80) bar.style.backgroundColor = '#82c3a6';
+        else if (data.score > 60) bar.style.backgroundColor = '#9b82c3';
+        else if (data.score > 40) bar.style.backgroundColor = '#e8b273';
+        else bar.style.backgroundColor = '#d87d7d';
+        
+        // Average Score
+        allScores.push(data.score);
+        sessionScores.push({time: formatTime(new Date()), score: data.score});
+        let sum = allScores.reduce((a, b) => a + b, 0);
+        let avg = Math.round(sum / allScores.length);
+        document.getElementById('avg-score').innerText = avg + "%";
 
+        // --- ISSUES & LOGGING ---
         let issuesList = document.getElementById('issues');
         issuesList.innerHTML = "";
 
         if (data.issues.length === 0) {
             let li = document.createElement('li');
-            li.innerText = "No issues detected";
-            li.style.color = "#22c55e";
+            li.innerText = "All good";
+            li.classList.add("good-issue");
             issuesList.appendChild(li);
         } else {
             data.issues.forEach(issue => {
                 let li = document.createElement('li');
                 li.innerText = issue;
+                li.classList.add("bad-issue");
                 issuesList.appendChild(li);
             });
         }
+
+        // Compare issues for event logging
+        data.issues.forEach(issue => {
+            if (!previousIssues.includes(issue)) {
+                logEvent(`Detected: ${issue}`, 'log-distraction');
+            }
+        });
+        previousIssues = data.issues;
+
+
+        // --- UPDATE CHARTS ---
+        if (scoreHistory.length > 20) {
+            scoreHistory.shift();
+            labels.shift();
+        }
+
+        scoreHistory.push(data.score);
+        labels.push('');
+        scoreChart.update();
+
+        if (stateCount[data.state] !== undefined) {
+            stateCount[data.state]++;
+        }
+        stateChart.data.datasets[0].data = Object.values(stateCount);
+        stateChart.update();
+
     });
-}, 500);
+}, 1000);
 </script>
 
 </body>

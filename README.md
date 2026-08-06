@@ -87,7 +87,7 @@ Based on the computed score, the system classifies the user into one of the foll
 ## Project Structure
 
 ```
-AI-attention-monitoring-system/
+Attention System/
 │
 ├── app.py
 ├── src/
@@ -96,11 +96,9 @@ AI-attention-monitoring-system/
 │   └── index.html
 ├── static/
 │   └── style.css
-├── outputs/
 │   ├── focused.png
 │   ├── distracted.png
 │   └── low_attention.png
-├── requirements.txt
 └── README.md
 ```
 
@@ -121,15 +119,15 @@ AI-attention-monitoring-system/
 
 ### Focused State
 
-![Focused](outputs/focused.png)
+![Focused](focused.png)
 
 ### Distracted State
 
-![Distracted](outputs/distracted.png)
+![Distracted](distracted.png)
 
 ### Low Attention State
 
-![Low Attention](outputs/low_attention.png)
+![Low Attention](low_attention.png)
 
 ## Results
 
@@ -154,4 +152,4 @@ This project demonstrates an effective approach to real-time attention monitorin
 
 ## Author
 
-Pratyaksha Singh
+Tanishk Jain

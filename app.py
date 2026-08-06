@@ -1,3 +1,5 @@
+import os
+os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 from flask import Flask, render_template, Response, jsonify
 import cv2
 from src.detector import analyze_frame
