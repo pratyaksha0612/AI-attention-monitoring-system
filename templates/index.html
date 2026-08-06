@@ -277,24 +277,22 @@ navigator.mediaDevices.getUserMedia({ video: true })
         alert("Camera access is required for this app to work. Please allow camera permissions in your browser and reload.");
     });
 
-// Send frames at ~10 FPS once metadata is loaded
-video.addEventListener('loadedmetadata', () => {
-    setInterval(() => {
-        if (video.paused || video.ended || video.videoWidth === 0) return;
-        
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        // Draw video frame to canvas
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Get base64 string
-        const dataURL = canvas.toDataURL('image/jpeg', 0.5); // compress to save bandwidth
-        socket.emit('process_frame', dataURL);
-    }, 100); 
-});
+// Send frames at ~10 FPS
+setInterval(() => {
+    if (!video.srcObject || video.paused || video.ended || video.videoWidth === 0) return;
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw video frame to canvas
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Get base64 string
+    const dataURL = canvas.toDataURL('image/jpeg', 0.5); // compress to save bandwidth
+    socket.emit('process_frame', dataURL);
+}, 100);
 
 // Receive processed frames and data
 socket.on('frame_processed', (data) => {
