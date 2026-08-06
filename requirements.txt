@@ -3,6 +3,4 @@ mediapipe==0.10.11
 numpy<2
 flask
 protobuf==3.20.3
-flask-socketio
-eventlet
 gunicorn

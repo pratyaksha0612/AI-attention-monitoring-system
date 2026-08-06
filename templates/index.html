@@ -6,7 +6,6 @@
     <title>Attention Analytics Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.1/socket.io.js"></script>
 </head>
 
 <body>
@@ -258,8 +257,7 @@ function exportData() {
     window.URL.revokeObjectURL(url);
 }
 
-// WebSocket Connection
-const socket = io();
+// Stream Connection
 const video = document.getElementById('localVideo');
 const canvas = document.getElementById('hiddenCanvas');
 const ctx = canvas.getContext('2d');
@@ -291,14 +289,23 @@ setInterval(() => {
     
     // Get base64 string
     const dataURL = canvas.toDataURL('image/jpeg', 0.5); // compress to save bandwidth
-    socket.emit('process_frame', dataURL);
+    
+    fetch('/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: dataURL })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.error) {
+            console.error(data.error);
+            return;
+        }
+        resultImage.src = data.image;
+        latestData = data;
+    })
+    .catch(err => console.error("Error processing frame:", err));
 }, 100);
-
-// Receive processed frames and data
-socket.on('frame_processed', (data) => {
-    resultImage.src = data.image;
-    latestData = data;
-});
 
 // Update UI and Charts at 1 FPS
 setInterval(() => {
