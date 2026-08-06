@@ -6,6 +6,7 @@
     <title>Attention Analytics Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.1/socket.io.js"></script>
 </head>
 
 <body>
@@ -38,7 +39,12 @@
                     </div>
                     <div id="state" class="state-badge">Analyzing...</div>
                 </div>
-                <img src="{{ url_for('video') }}" class="video-feed" alt="Video Feed">
+                <!-- Video element for capturing webcam (hidden) -->
+                <video id="localVideo" autoplay playsinline style="display:none;"></video>
+                <!-- Canvas for extracting frames (hidden) -->
+                <canvas id="hiddenCanvas" style="display:none;"></canvas>
+                <!-- The image tag displaying the processed frames from server -->
+                <img id="video-feed" class="video-feed" alt="Video Feed">
             </div>
         </div>
 
@@ -252,103 +258,143 @@ function exportData() {
     window.URL.revokeObjectURL(url);
 }
 
-setInterval(() => {
-    fetch('/data')
-    .then(res => res.json())
-    .then(data => {
+// WebSocket Connection
+const socket = io();
+const video = document.getElementById('localVideo');
+const canvas = document.getElementById('hiddenCanvas');
+const ctx = canvas.getContext('2d');
+const resultImage = document.getElementById('video-feed');
+let latestData = null;
 
-        // --- STREAK CALCULATION ---
-        if (data.state === "FOCUSED") {
-            currentFocusStreak += 1;
-            if (currentFocusStreak > peakFocusStreak) {
-                peakFocusStreak = currentFocusStreak;
-            }
-        } else {
-            currentFocusStreak = 0;
-        }
-
-        // Format streak
-        let streakText = "";
-        if (peakFocusStreak >= 60) {
-            streakText = `${Math.floor(peakFocusStreak/60)}m ${peakFocusStreak%60}s`;
-        } else {
-            streakText = `${peakFocusStreak}s`;
-        }
-        document.getElementById('peak-streak').innerText = streakText;
-
-
-        // --- UI UPDATE ---
-        let stateEl = document.getElementById('state');
-        stateEl.innerText = data.state;
-        
-        // Flat state colors
-        stateEl.className = 'state-badge'; // reset
-        if (data.state === "FOCUSED") stateEl.classList.add('state-focused');
-        else if (data.state === "ATTENTIVE") stateEl.classList.add('state-attentive');
-        else if (data.state === "LOW ATTENTION") stateEl.classList.add('state-low');
-        else stateEl.classList.add('state-critical');
-
-        document.getElementById('score').innerText = data.score;
-        document.getElementById('progress-bar').style.width = data.score + "%";
-        
-        // Progress bar color based on score
-        let bar = document.getElementById('progress-bar');
-        if (data.score > 80) bar.style.backgroundColor = '#82c3a6';
-        else if (data.score > 60) bar.style.backgroundColor = '#9b82c3';
-        else if (data.score > 40) bar.style.backgroundColor = '#e8b273';
-        else bar.style.backgroundColor = '#d87d7d';
-        
-        // Average Score
-        allScores.push(data.score);
-        sessionScores.push({time: formatTime(new Date()), score: data.score});
-        let sum = allScores.reduce((a, b) => a + b, 0);
-        let avg = Math.round(sum / allScores.length);
-        document.getElementById('avg-score').innerText = avg + "%";
-
-        // --- ISSUES & LOGGING ---
-        let issuesList = document.getElementById('issues');
-        issuesList.innerHTML = "";
-
-        if (data.issues.length === 0) {
-            let li = document.createElement('li');
-            li.innerText = "All good";
-            li.classList.add("good-issue");
-            issuesList.appendChild(li);
-        } else {
-            data.issues.forEach(issue => {
-                let li = document.createElement('li');
-                li.innerText = issue;
-                li.classList.add("bad-issue");
-                issuesList.appendChild(li);
-            });
-        }
-
-        // Compare issues for event logging
-        data.issues.forEach(issue => {
-            if (!previousIssues.includes(issue)) {
-                logEvent(`Detected: ${issue}`, 'log-distraction');
-            }
-        });
-        previousIssues = data.issues;
-
-
-        // --- UPDATE CHARTS ---
-        if (scoreHistory.length > 20) {
-            scoreHistory.shift();
-            labels.shift();
-        }
-
-        scoreHistory.push(data.score);
-        labels.push('');
-        scoreChart.update();
-
-        if (stateCount[data.state] !== undefined) {
-            stateCount[data.state]++;
-        }
-        stateChart.data.datasets[0].data = Object.values(stateCount);
-        stateChart.update();
-
+// Start Webcam
+navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+        video.srcObject = stream;
+        video.play();
+    })
+    .catch(err => {
+        console.error("Error accessing webcam:", err);
     });
+
+// Send frames at ~10 FPS
+video.addEventListener('play', () => {
+    setInterval(() => {
+        if (video.paused || video.ended) return;
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Draw video frame to canvas
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Get base64 string
+        const dataURL = canvas.toDataURL('image/jpeg', 0.5); // compress to save bandwidth
+        socket.emit('process_frame', dataURL);
+    }, 100); 
+});
+
+// Receive processed frames and data
+socket.on('frame_processed', (data) => {
+    resultImage.src = data.image;
+    latestData = data;
+});
+
+// Update UI and Charts at 1 FPS
+setInterval(() => {
+    if (!latestData) return;
+    const data = latestData;
+
+    // --- STREAK CALCULATION ---
+    if (data.state === "FOCUSED") {
+        currentFocusStreak += 1;
+        if (currentFocusStreak > peakFocusStreak) {
+            peakFocusStreak = currentFocusStreak;
+        }
+    } else {
+        currentFocusStreak = 0;
+    }
+
+    // Format streak
+    let streakText = "";
+    if (peakFocusStreak >= 60) {
+        streakText = `${Math.floor(peakFocusStreak/60)}m ${peakFocusStreak%60}s`;
+    } else {
+        streakText = `${peakFocusStreak}s`;
+    }
+    document.getElementById('peak-streak').innerText = streakText;
+
+    // --- UI UPDATE ---
+    let stateEl = document.getElementById('state');
+    stateEl.innerText = data.state;
+    
+    // Flat state colors
+    stateEl.className = 'state-badge'; // reset
+    if (data.state === "FOCUSED") stateEl.classList.add('state-focused');
+    else if (data.state === "ATTENTIVE") stateEl.classList.add('state-attentive');
+    else if (data.state === "LOW ATTENTION") stateEl.classList.add('state-low');
+    else stateEl.classList.add('state-critical');
+
+    document.getElementById('score').innerText = data.score;
+    document.getElementById('progress-bar').style.width = data.score + "%";
+    
+    // Progress bar color based on score
+    let bar = document.getElementById('progress-bar');
+    if (data.score > 80) bar.style.backgroundColor = '#82c3a6';
+    else if (data.score > 60) bar.style.backgroundColor = '#9b82c3';
+    else if (data.score > 40) bar.style.backgroundColor = '#e8b273';
+    else bar.style.backgroundColor = '#d87d7d';
+    
+    // Average Score
+    allScores.push(data.score);
+    sessionScores.push({time: formatTime(new Date()), score: data.score});
+    let sum = allScores.reduce((a, b) => a + b, 0);
+    let avg = Math.round(sum / allScores.length);
+    document.getElementById('avg-score').innerText = avg + "%";
+
+    // --- ISSUES & LOGGING ---
+    let issuesList = document.getElementById('issues');
+    issuesList.innerHTML = "";
+
+    if (data.issues.length === 0) {
+        let li = document.createElement('li');
+        li.innerText = "All good";
+        li.classList.add("good-issue");
+        issuesList.appendChild(li);
+    } else {
+        data.issues.forEach(issue => {
+            let li = document.createElement('li');
+            li.innerText = issue;
+            li.classList.add("bad-issue");
+            issuesList.appendChild(li);
+        });
+    }
+
+    // Compare issues for event logging
+    data.issues.forEach(issue => {
+        if (!previousIssues.includes(issue)) {
+            logEvent(`Detected: ${issue}`, 'log-distraction');
+        }
+    });
+    previousIssues = data.issues;
+
+    // --- UPDATE CHARTS ---
+    if (scoreHistory.length > 20) {
+        scoreHistory.shift();
+        labels.shift();
+    }
+
+    scoreHistory.push(data.score);
+    labels.push('');
+    scoreChart.update();
+
+    if (stateCount[data.state] !== undefined) {
+        stateCount[data.state]++;
+    }
+    stateChart.data.datasets[0].data = Object.values(stateCount);
+    stateChart.update();
+
 }, 1000);
 </script>
 
