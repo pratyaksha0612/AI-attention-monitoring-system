@@ -275,12 +275,27 @@ navigator.mediaDevices.getUserMedia({ video: true })
         alert("Camera access is required for this app to work. Please allow camera permissions in your browser and reload.");
     });
 
-// Send frames at ~10 FPS
-setInterval(() => {
-    if (!video.srcObject || video.paused || video.ended || video.videoWidth === 0) return;
+// Send frames sequentially to avoid queue buildup and lag
+let isProcessing = false;
+
+function sendFrame() {
+    if (!video.srcObject || video.paused || video.ended || video.videoWidth === 0) {
+        setTimeout(sendFrame, 100);
+        return;
+    }
     
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    if (isProcessing) {
+        setTimeout(sendFrame, 50);
+        return;
+    }
+    
+    isProcessing = true;
+    
+    // Downscale for faster processing and less network payload
+    const TARGET_WIDTH = 480;
+    const scale = TARGET_WIDTH / video.videoWidth;
+    canvas.width = TARGET_WIDTH;
+    canvas.height = video.videoHeight * scale;
     
     // Draw video frame to canvas
     ctx.translate(canvas.width, 0);
@@ -297,15 +312,27 @@ setInterval(() => {
     })
     .then(response => response.json())
     .then(data => {
+        isProcessing = false;
         if(data.error) {
             console.error(data.error);
+            setTimeout(sendFrame, 100);
             return;
         }
         resultImage.src = data.image;
         latestData = data;
+        
+        // Send next frame immediately after receiving the response
+        requestAnimationFrame(sendFrame);
     })
-    .catch(err => console.error("Error processing frame:", err));
-}, 100);
+    .catch(err => {
+        console.error("Error processing frame:", err);
+        isProcessing = false;
+        setTimeout(sendFrame, 500); // Wait longer on error
+    });
+}
+
+// Start the loop
+sendFrame();
 
 // Update UI and Charts at 1 FPS
 setInterval(() => {
