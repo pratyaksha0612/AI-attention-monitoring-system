@@ -3,10 +3,10 @@ import mediapipe as mp
 import threading
 
 mp_pose = mp.solutions.pose
-pose = mp_pose.Pose()
-
 mp_face = mp.solutions.face_mesh
-face_mesh = mp_face.FaceMesh(refine_landmarks=True)
+
+pose = None
+face_mesh = None
 
 # MediaPipe instances are not thread-safe and will SIGSEGV if accessed concurrently.
 _detector_lock = threading.Lock()
@@ -15,6 +15,14 @@ def get_distance(p1, p2, w, h):
     return ((p1.x * w - p2.x * w) ** 2 + (p1.y * h - p2.y * h) ** 2) ** 0.5
 
 def analyze_frame(frame):
+    global pose, face_mesh
+    
+    with _detector_lock:
+        if pose is None:
+            pose = mp_pose.Pose()
+        if face_mesh is None:
+            face_mesh = mp_face.FaceMesh(refine_landmarks=True)
+
     h, w, _ = frame.shape
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
