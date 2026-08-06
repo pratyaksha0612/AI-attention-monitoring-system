@@ -40,11 +40,11 @@
                     <div id="state" class="state-badge">Analyzing...</div>
                 </div>
                 <!-- Video element for capturing webcam (hidden) -->
-                <video id="localVideo" autoplay playsinline style="display:none;"></video>
+                <video id="localVideo" autoplay playsinline muted style="display:none;"></video>
                 <!-- Canvas for extracting frames (hidden) -->
                 <canvas id="hiddenCanvas" style="display:none;"></canvas>
                 <!-- The image tag displaying the processed frames from server -->
-                <img id="video-feed" class="video-feed" alt="Video Feed">
+                <img id="video-feed" class="video-feed" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Waiting for camera feed...">
             </div>
         </div>
 
@@ -274,12 +274,13 @@ navigator.mediaDevices.getUserMedia({ video: true })
     })
     .catch(err => {
         console.error("Error accessing webcam:", err);
+        alert("Camera access is required for this app to work. Please allow camera permissions in your browser and reload.");
     });
 
-// Send frames at ~10 FPS
-video.addEventListener('play', () => {
+// Send frames at ~10 FPS once metadata is loaded
+video.addEventListener('loadedmetadata', () => {
     setInterval(() => {
-        if (video.paused || video.ended) return;
+        if (video.paused || video.ended || video.videoWidth === 0) return;
         
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
