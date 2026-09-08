@@ -96,9 +96,13 @@ Attention System/
 │   └── index.html
 ├── static/
 │   └── style.css
+├── outputs/
 │   ├── focused.png
+│   ├── attentive_eyes_closed.png
+│   ├── attentive_head_forward.png
 │   ├── distracted.png
-│   └── low_attention.png
+│   └── dashboard_stats.png
+├── requirements.txt
 └── README.md
 ```
 
@@ -119,15 +123,23 @@ Attention System/
 
 ### Focused State
 
-![Focused](focused.png)
+![Focused](outputs/focused.png)
+
+### Attentive State (Eyes Closed)
+
+![Attentive Eyes Closed](outputs/attentive_eyes_closed.png)
+
+### Attentive State (Head Forward)
+
+![Attentive Head Forward](outputs/attentive_head_forward.png)
 
 ### Distracted State
 
-![Distracted](distracted.png)
+![Distracted](outputs/distracted.png)
 
-### Low Attention State
+### Dashboard Statistics
 
-![Low Attention](low_attention.png)
+![Dashboard Analytics](outputs/dashboard_stats.png)
 
 ## Results
 
