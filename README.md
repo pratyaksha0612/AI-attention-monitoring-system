@@ -97,11 +97,11 @@ Attention System/
 ├── static/
 │   └── style.css
 ├── outputs/
-│   ├── focused.png
-│   ├── attentive_eyes_closed.png
-│   ├── attentive_head_forward.png
-│   ├── distracted.png
-│   └── dashboard_stats.png
+│   ├── 01_focused.png
+│   ├── 02_attentive_eyes_closed.png
+│   ├── 03_attentive_head_forward.png
+│   ├── 04_distracted.png
+│   └── 05_dashboard_stats.png
 ├── requirements.txt
 └── README.md
 ```
@@ -123,23 +123,23 @@ Attention System/
 
 ### Focused State
 
-![Focused](outputs/focused.png)
+![Focused](outputs/01_01_focused.png)
 
 ### Attentive State (Eyes Closed)
 
-![Attentive Eyes Closed](outputs/attentive_eyes_closed.png)
+![Attentive Eyes Closed](outputs/02_02_attentive_eyes_closed.png)
 
 ### Attentive State (Head Forward)
 
-![Attentive Head Forward](outputs/attentive_head_forward.png)
+![Attentive Head Forward](outputs/03_03_attentive_head_forward.png)
 
 ### Distracted State
 
-![Distracted](outputs/distracted.png)
+![Distracted](outputs/04_04_distracted.png)
 
 ### Dashboard Statistics
 
-![Dashboard Analytics](outputs/dashboard_stats.png)
+![Dashboard Analytics](outputs/05_05_dashboard_stats.png)
 
 ## Results
 
