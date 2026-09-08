@@ -124,23 +124,23 @@ Attention System/
 
 ### Focused State
 
-![Focused](outputs/01_01_focused.png)
+![Focused](./outputs/01_focused.png)
 
 ### Attentive State (Eyes Closed)
 
-![Attentive Eyes Closed](outputs/02_02_attentive_eyes_closed.png)
+![Attentive Eyes Closed](./outputs/02_attentive_eyes_closed.png)
 
 ### Attentive State (Head Forward)
 
-![Attentive Head Forward](outputs/03_03_attentive_head_forward.png)
+![Attentive Head Forward](./outputs/03_attentive_head_forward.png)
 
 ### Distracted State
 
-![Distracted](outputs/04_04_distracted.png)
+![Distracted](./outputs/04_distracted.png)
 
 ### Dashboard Statistics
 
-![Dashboard Analytics](outputs/05_05_dashboard_stats.png)
+![Dashboard Analytics](./outputs/05_dashboard_stats.png)
 
 ## Results
 
@@ -165,4 +165,4 @@ This project demonstrates an effective approach to real-time attention monitorin
 
 ## Author
 
-Tanishk Jain
+Pratyaksha Singh
